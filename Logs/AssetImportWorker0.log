@@ -2912,3 +2912,76 @@ Received Import Request.
 Start importing Assets/Materials/NonAlignedEye.mat using Guid(a04d609ab503f4444b19fbcc8db648b8) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: 'ec6127a60b6a192093d459237cf4df97') in 0.069852 seconds 
   Import took 0.072555 seconds .
 
+========================================================================
+Received Import Request.
+  Time since last request: 146.901283 seconds.
+  path: Assets/NonAlignedEye.mat
+  artifactKey: Guid(05025724389912646bac387587be405b) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/NonAlignedEye.mat using Guid(05025724389912646bac387587be405b) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: 'fde1ebfac4095e27ef9d57279176d083') in 0.044190 seconds 
+  Import took 0.052195 seconds .
+
+========================================================================
+Received Import Request.
+  Time since last request: 0.001084 seconds.
+  path: Assets/NonAlignedEye.mat
+  artifactKey: Guid(05025724389912646bac387587be405b) Importer(815301076,1909f56bfc062723c751e8b465ee728b)
+Start importing Assets/NonAlignedEye.mat using Guid(05025724389912646bac387587be405b) Importer(815301076,1909f56bfc062723c751e8b465ee728b)  -> (artifact id: 'fde1ebfac4095e27ef9d57279176d083') in 0.027488 seconds 
+  Import took 0.033578 seconds .
+
+========================================================================
+Received Prepare
+Registering precompiled user dll's ...
+Registered in 0.006437 seconds.
+Begin MonoManager ReloadAssembly
+Native extension for WindowsStandalone target not found
+Refreshing native plugins compatible for Editor in 0.31 ms, found 2 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Mono: successfully reloaded assembly
+- Completed reload, in  1.475 seconds
+Domain Reload Profiling:
+	ReloadAssembly (1476ms)
+		BeginReloadAssembly (124ms)
+			ExecutionOrderSort (0ms)
+			DisableScriptedObjects (6ms)
+			BackupInstance (0ms)
+			ReleaseScriptingObjects (0ms)
+			CreateAndSetChildDomain (46ms)
+		EndReloadAssembly (1198ms)
+			LoadAssemblies (116ms)
+			RebuildTransferFunctionScriptingTraits (0ms)
+			SetupTypeCache (327ms)
+			ReleaseScriptCaches (1ms)
+			RebuildScriptCaches (47ms)
+			SetupLoadedEditorAssemblies (468ms)
+				LogAssemblyErrors (0ms)
+				InitializePlatformSupportModulesInManaged (9ms)
+				SetLoadedEditorAssemblies (1ms)
+				RefreshPlugins (0ms)
+				BeforeProcessingInitializeOnLoad (156ms)
+				ProcessInitializeOnLoadAttributes (289ms)
+				ProcessInitializeOnLoadMethodAttributes (5ms)
+				AfterProcessingInitializeOnLoad (8ms)
+				EditorAssembliesLoaded (0ms)
+			ExecutionOrderSort2 (0ms)
+			AwakeInstancesAfterBackupRestoration (8ms)
+Platform modules already initialized, skipping
+Refreshing native plugins compatible for Editor in 0.32 ms, found 2 plugins.
+Preloading 0 native plugins for Editor in 0.00 ms.
+Unloading 1387 Unused Serialized files (Serialized files now loaded: 0)
+System memory in use before: 68.5 MB.
+System memory in use after: 68.6 MB.
+
+Unloading 14 unused Assets to reduce memory usage. Loaded Objects now: 2017.
+Total: 2.525200 ms (FindLiveObjects: 0.174600 ms CreateObjectMapping: 0.051700 ms MarkObjects: 2.239400 ms  DeleteObjects: 0.058100 ms)
+
+AssetImportParameters requested are different than current active one (requested -> active):
+  custom:framework-win-MediaFoundation: 216162199b28c13a410421893ffa2e32 -> 
+  custom:video-decoder-ogg-theora: a1e56fd34408186e4bbccfd4996cb3dc -> 
+  custom:container-muxer-webm: aa71ff27fc2769a1b78a27578f13a17b -> 
+  custom:container-demuxer-webm: 4f35f7cbe854078d1ac9338744f61a02 -> 
+  custom:container-demuxer-ogg: 62fdf1f143b41e24485cea50d1cbac27 -> 
+  custom:video-encoder-webm-vp8: eb34c28f22e8b96e1ab97ce403110664 -> 
+  custom:video-decoder-webm-vp8: 9c59270c3fd7afecdb556c50c9e8de78 -> 
+  custom:audio-decoder-ogg-vorbis: bf7c407c2cedff20999df2af8eb42d56 -> 
+  custom:audio-encoder-webm-vorbis: bf7c407c2cedff20999df2af8eb42d56 -> 
+AssetImportWorkerClient::OnTransportError - code=2 error=End of file
