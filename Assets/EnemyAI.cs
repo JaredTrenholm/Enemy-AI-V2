@@ -6,15 +6,19 @@ public class EnemyAI : MonoBehaviour
     #region Fields
     public float sightRange;
     public float attackRange;
+    public GameObject bullet;
+    public float waitToFire;
+    public bool readyToFire = true;
+    public float timeBeforeFiring;
 
     public GameObject target;
     public Vector3 targetLastKnownPos;
-    public EnemyState state = EnemyState.Patrol;
+    public AIState state = AIState.Patrol;
     public GameCharacter.CharacterType type;
     public RaycastHit hit = new RaycastHit();
     public NavMeshAgent agent;
     public Vector3 destination;
-    public enum EnemyState { 
+    public enum AIState { 
         Patrol,
         Searching,
         Chasing,
@@ -31,13 +35,13 @@ public class EnemyAI : MonoBehaviour
     private void OnEnable()
     {
         type = this.GetComponent<GameCharacter>().type;
-        state = EnemyState.Patrol;
+        state = AIState.Patrol;
         destination = this.transform.position;
     }
     // Update is called once per frame
     void Update()
     {
-        AIState();
+        DoState();
     }
     private void FixedUpdate()
     {
@@ -46,27 +50,28 @@ public class EnemyAI : MonoBehaviour
     #endregion
 
     #region AI State Logics
-    private void AIState()
+    private void DoState()
     {
         LookForTarget();
+        CheckState();
         switch (state) {
-            case EnemyState.Patrol:
+            case AIState.Patrol:
                 Patrol();
                 CheckState();
                 break;
-            case EnemyState.Chasing:
+            case AIState.Chasing:
                 Chase();
                 CheckState();
                 break;
-            case EnemyState.Searching:
+            case AIState.Searching:
                 Search();
                 CheckState();
                 break;
-            case EnemyState.Attacking:
+            case AIState.Attacking:
                 Attack();
                 CheckState();
                 break;
-            case EnemyState.Retreating:
+            case AIState.Retreating:
                 Retreat();
                 CheckState();
                 break;
@@ -76,13 +81,13 @@ public class EnemyAI : MonoBehaviour
     {
         switch (state)
         {
-            case EnemyState.Chasing:
+            case AIState.Chasing:
                 agent.SetDestination(target.transform.position);
                 break;
-            case EnemyState.Searching:
+            case AIState.Searching:
                 agent.SetDestination(targetLastKnownPos);
                 break;
-            case EnemyState.Retreating:
+            case AIState.Retreating:
                 agent.SetDestination(destination);
                 break;
         }
@@ -101,13 +106,13 @@ public class EnemyAI : MonoBehaviour
     {
         if(CanSeeTarget() == false)
         {
-            ChangeState(EnemyState.Searching);
+            ChangeState(AIState.Searching);
             return;
         }
         targetLastKnownPos = target.transform.position;
         if (Vector3.Distance(target.transform.position, this.gameObject.transform.position) <= attackRange)
         {
-            ChangeState(EnemyState.Attacking);
+            ChangeState(AIState.Attacking);
             agent.SetDestination(this.transform.position);
         }
         else
@@ -117,36 +122,59 @@ public class EnemyAI : MonoBehaviour
     }
     private void Search()
     {
+        LookForTarget();
         if (CanSeeTarget() == true)
         {
-            ChangeState(EnemyState.Chasing);
+            ChangeState(AIState.Chasing);
             return;
         }
-        if (Vector3.Distance(targetLastKnownPos, this.gameObject.transform.position) <= attackRange)
+        if (Vector3.Distance(targetLastKnownPos, this.gameObject.transform.position) <= 1)
         {
-            ChangeState(EnemyState.Retreating);
+            ChangeState(AIState.Retreating);
         }
     }
     private void Attack()
     {
-        target.GetComponent<GameCharacter>().TakeDamage(this.gameObject);
-        if (!CanSeeTarget())
-            ChangeState(EnemyState.Searching);
-        if (target == null)
-            return;
-        if(target.activeInHierarchy == false)
-            ChangeState(EnemyState.Patrol);
+        if (readyToFire)
+        {
+            this.transform.LookAt(target.transform);
+            if (!CanSeeTarget())
+            {
+                targetLastKnownPos = target.transform.position;
+                ChangeState(AIState.Searching);
+                return;
+            }
+
+            agent.SetDestination(this.transform.position);
+            GameObject attackingBullet = GameObject.Instantiate(bullet);
+            attackingBullet.transform.position = this.transform.position;
+            attackingBullet.GetComponent<Bullet>().SetAttacker(this.gameObject);
+            readyToFire = false;
+            timeBeforeFiring = 0;
+            if (!CanSeeTarget())
+                ChangeState(AIState.Searching);
+            if (target == null)
+                return;
+            if (target.activeInHierarchy == false)
+                ChangeState(AIState.Patrol);
+        } else if(timeBeforeFiring >= waitToFire)
+        {
+            readyToFire = true;
+        } else
+        {
+            timeBeforeFiring += Time.deltaTime;
+        }
     }
     private void Retreat()
     {
         agent.SetDestination(destination);
         if(Vector3.Distance(this.transform.position, destination) <= 2)
         {
-            ChangeState(EnemyState.Patrol);
+            ChangeState(AIState.Patrol);
         }
         if (IsAtDestination() || !agent.hasPath)
         {
-            ChangeState(EnemyState.Patrol);
+            ChangeState(AIState.Patrol);
         }
     }
     #endregion
@@ -154,27 +182,28 @@ public class EnemyAI : MonoBehaviour
     #region Check and Changing States
     private void CheckState()
     {
-        if(target != null && state != EnemyState.Attacking)
+        if(target != null && state != AIState.Attacking)
         {
-            ChangeState(EnemyState.Chasing);
+            ChangeState(AIState.Chasing);
         }
         if (target != null)
             if (target.activeInHierarchy == false)
             {
                 target = null;
-                ChangeState(EnemyState.Patrol);
+                ChangeState(AIState.Patrol);
             }
     }
 
-    private void ChangeState(EnemyState targetState)
+    private void ChangeState(AIState targetState)
     {
         state = targetState;
-        if (state == EnemyState.Searching)
+        if (state == AIState.Searching)
         {
             targetLastKnownPos = target.transform.position;
             agent.SetDestination(targetLastKnownPos);
             target = null;
-        } else if(state == EnemyState.Patrol)
+        }
+        else if (state == AIState.Patrol)
         {
             FindNewDestination();
         }
@@ -244,53 +273,42 @@ public class EnemyAI : MonoBehaviour
         {
             CheckTarget();
         }
+        if (Physics.SphereCast(transform.position, sightRange, Vector3.forward, out hit))
+        {
+            CheckTarget();
+        }
+
+        RaycastHit[] hits =  Physics.SphereCastAll(transform.position, attackRange, Vector3.forward);
+        for(int x = 0; x < hits.Length; x++)
+        {
+            if (hits[x].collider.tag == "GameCharacter")
+            {
+                Debug.Log(hits[x].collider.tag);
+                hit = hits[x];
+                CheckTarget();
+            }
+        }
     }
     
     private bool CanSeeTarget()
     {
-        if (Physics.Raycast(transform.position, Vector3.forward, out hit))
+        if (target != null)
         {
-            return hit.collider.gameObject == target;
+            if (Physics.Raycast(transform.position, target.transform.position, out hit))
+            {
+                return hit.collider.gameObject == target;
+            }
         }
-        if (Physics.Raycast(transform.position, Vector3.forward + Vector3.left, out hit))
+        RaycastHit[] hits = Physics.SphereCastAll(transform.position, attackRange, Vector3.forward);
+        for (int x = 0; x < hits.Length; x++)
         {
-            return hit.collider.gameObject == target;
-        }
-        if (Physics.Raycast(transform.position, Vector3.forward + Vector3.right, out hit))
-        {
-            return hit.collider.gameObject == target;
-        }
-        if (Physics.Raycast(transform.position, Vector3.forward + (Vector3.left * 2), out hit))
-        {
-            return hit.collider.gameObject == target;
-        }
-        if (Physics.Raycast(transform.position, Vector3.forward + (Vector3.right * 2), out hit))
-        {
-            return hit.collider.gameObject == target;
-        }
-        if (Physics.Raycast(transform.position, Vector3.forward + (Vector3.left / 2), out hit))
-        {
-            return hit.collider.gameObject == target;
-        }
-        if (Physics.Raycast(transform.position, Vector3.forward + (Vector3.right / 2), out hit))
-        {
-            return hit.collider.gameObject == target;
-        }
-        if (Physics.Raycast(transform.position, Vector3.forward + (Vector3.left * 4), out hit))
-        {
-            return hit.collider.gameObject == target;
-        }
-        if (Physics.Raycast(transform.position, Vector3.forward + (Vector3.right * 4), out hit))
-        {
-            return hit.collider.gameObject == target;
-        }
-        if (Physics.Raycast(transform.position, Vector3.forward + (Vector3.left / 4), out hit))
-        {
-            return hit.collider.gameObject == target;
-        }
-        if (Physics.Raycast(transform.position, Vector3.forward + (Vector3.right / 4), out hit))
-        {
-            return hit.collider.gameObject == target;
+            if (hits[x].collider.gameObject == target)
+            {
+                if (Physics.Raycast(transform.position, hits[x].collider.gameObject.transform.position, out hit))
+                {
+                    return hit.collider.gameObject == target;
+                }
+            }
         }
         return false;
     }
@@ -304,6 +322,12 @@ public class EnemyAI : MonoBehaviour
                 if (hit.collider.gameObject.GetComponent<GameCharacter>().type != type) {
                     target = hit.collider.gameObject;
                     targetLastKnownPos = target.gameObject.transform.position;
+                } else if(target != null)
+                {
+                    if(hit.collider.gameObject == target)
+                    {
+                        targetLastKnownPos = target.gameObject.transform.position;
+                    }
                 }
             }
         }
