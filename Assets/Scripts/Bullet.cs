@@ -9,7 +9,7 @@ public class Bullet : MonoBehaviour
     
     void Update()
     {
-        transform.Translate((Vector3.forward*10)*Time.deltaTime, Space.Self);  
+        transform.Translate((Vector3.forward*20)*Time.deltaTime, Space.Self);  
     }
 
     private void OnTriggerEnter(Collider other)

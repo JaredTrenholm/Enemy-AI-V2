@@ -13,7 +13,6 @@ public class GameCharacter : MonoBehaviour
         Traitor,
         Player
     }
-
     public void TakeDamage(GameObject attacker)
     {
         health -= 10;
