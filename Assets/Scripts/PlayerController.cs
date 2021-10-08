@@ -4,22 +4,24 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    public float speed;
+    public float baseSpeed;
     public float speedSound;
+
+    private float speed;
     void Update()
     {
         if (Input.GetKey(KeyCode.LeftShift))
-            speed = 20;
+            speed = baseSpeed*2;
         else if (Input.GetKey(KeyCode.LeftControl))
-            speed = 5;
+            speed = baseSpeed/2;
         else
-            speed = 10;
+            speed = baseSpeed;
 
-        if (speed == 10)
+        if (speed == baseSpeed)
             speedSound = 1;
-        if (speed == 20)
+        if (speed == baseSpeed*2)
             speedSound = 2;
-        if (speed == 5)
+        if (speed == baseSpeed/2)
             speedSound = 0.5f;
 
 

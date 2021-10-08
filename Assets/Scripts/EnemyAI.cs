@@ -101,7 +101,7 @@ public class EnemyAI : MonoBehaviour
     #region States
     private void Patrol()
     {
-        if (IsAtDestination() || !agent.hasPath)
+        if (IsAtDestination(destination, 2f) || !agent.hasPath)
         {
             FindNewDestination();
         }
@@ -113,8 +113,7 @@ public class EnemyAI : MonoBehaviour
             ChangeState(AIState.Searching);
             return;
         }
-        targetLastKnownPos = target.transform.position;
-        if (Vector3.Distance(target.transform.position, this.gameObject.transform.position) <= attackRange)
+        if (IsAtDestination(target.transform.position, attackRange))
         {
             if (Physics.Raycast(transform.position, target.transform.position, out hit))
             {
@@ -136,7 +135,7 @@ public class EnemyAI : MonoBehaviour
             ChangeState(AIState.Chasing);
             return;
         }
-        if (Vector3.Distance(targetLastKnownPos, this.gameObject.transform.position) <= 1)
+        if (IsAtDestination(targetLastKnownPos, 2f))
         {
             ChangeState(AIState.Retreating);
         }
@@ -176,11 +175,7 @@ public class EnemyAI : MonoBehaviour
     private void Retreat()
     {
         agent.SetDestination(destination);
-        if(Vector3.Distance(this.transform.position, destination) <= 2)
-        {
-            ChangeState(AIState.Patrol);
-        }
-        if (IsAtDestination() || !agent.hasPath)
+        if (IsAtDestination(destination, 2f) || !agent.hasPath)
         {
             ChangeState(AIState.Patrol);
         }
@@ -223,10 +218,10 @@ public class EnemyAI : MonoBehaviour
     }
     #endregion
 
-    #region Check and FInd Destinations
-    private bool IsAtDestination()
+    #region Check and Find Destinations
+    private bool IsAtDestination(Vector3 destinationPos, float distanceRange)
     {
-        if(Vector3.Distance(this.transform.position, destination) <= 2)
+        if(Vector3.Distance(this.transform.position, destinationPos) <= distanceRange)
             return true;
         return false;
     }
