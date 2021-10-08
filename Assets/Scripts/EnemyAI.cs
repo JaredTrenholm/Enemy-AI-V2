@@ -18,7 +18,7 @@ public class EnemyAI : MonoBehaviour
     public AIState state = AIState.Patrol;
     private RaycastHit hit = new RaycastHit();
     private NavMeshAgent agent;
-    private Vector3 destination;
+    public Vector3 destination;
     public enum AIState { 
         Patrol,
         Searching,
@@ -37,7 +37,7 @@ public class EnemyAI : MonoBehaviour
     {
         type = this.GetComponent<GameCharacter>().type;
         state = AIState.Patrol;
-        destination = this.transform.position;
+        FindNewDestination();
     }
     // Update is called once per frame
     void Update()
@@ -223,6 +223,8 @@ public class EnemyAI : MonoBehaviour
     {
         if(Vector3.Distance(this.transform.position, destinationPos) <= distanceRange)
             return true;
+        else if (!agent.hasPath)
+            return true;
         return false;
     }
 
@@ -237,18 +239,11 @@ public class EnemyAI : MonoBehaviour
     #region Target Finding
     private void LookForTarget()
     {
-        if(Vector3.Distance(this.transform.position, player.transform.position) <= attackRange * player.GetComponent<PlayerController>().speedSound)
+        if (Vector3.Distance(this.transform.position, player.transform.position) <= attackRange * player.GetComponent<PlayerController>().speedSound)
         {
-            if (Physics.Raycast(transform.position, transform.TransformDirection(player.transform.position), out hit))
-            {
-                if (hit.collider.gameObject == player && state != AIState.Attacking && state != AIState.Chasing)
-                {
-                    target = player;
-                    targetLastKnownPos = player.transform.position;
-                    ChangeState(AIState.Chasing);
-                }
-                
-            }
+            target = player;
+            targetLastKnownPos = player.transform.position;
+            ChangeState(AIState.Searching);
         }
         if(state == AIState.Searching)
         {
@@ -325,7 +320,7 @@ public class EnemyAI : MonoBehaviour
     {
         if (Vector3.Distance(this.transform.position, player.transform.position) <= 10f * player.GetComponent<PlayerController>().speedSound)
         {
-            if (Physics.Raycast(transform.position, transform.TransformDirection(player.transform.position), out hit))
+            if (Physics.Raycast(transform.position, player.transform.position, out hit))
             {
                 if(hit.collider.gameObject == player)
                     return true;
@@ -399,13 +394,13 @@ public class EnemyAI : MonoBehaviour
                 if (hit.collider.gameObject.GetComponent<GameCharacter>().type != type) {
                     target = hit.collider.gameObject;
                     targetLastKnownPos = target.gameObject.transform.position;
-                } else if(target != null)
+                } /*else if(target != null)
                 {
                     if(hit.collider.gameObject == target)
                     {
                         targetLastKnownPos = target.gameObject.transform.position;
                     }
-                }
+                }*/
             }
         }
     }

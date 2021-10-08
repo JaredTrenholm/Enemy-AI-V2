@@ -16,13 +16,18 @@ public class PlayerController : MonoBehaviour
             speed = baseSpeed/2;
         else
             speed = baseSpeed;
-
-        if (speed == baseSpeed)
-            speedSound = 1;
-        if (speed == baseSpeed*2)
-            speedSound = 2;
-        if (speed == baseSpeed/2)
-            speedSound = 0.5f;
+        if (Input.anyKey)
+        {
+            if (speed == baseSpeed)
+                speedSound = 1;
+            if (speed == baseSpeed * 2)
+                speedSound = 2;
+            if (speed == baseSpeed / 2)
+                speedSound = 0.25f;
+        } else
+        {
+            speedSound = 0;
+        }
 
 
         if (Input.GetKey(KeyCode.W))
