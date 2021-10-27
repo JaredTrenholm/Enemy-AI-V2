@@ -25,4 +25,9 @@ public class Bullet : MonoBehaviour
         attacker = attackerRef;
         transform.LookAt(attacker.GetComponent<EnemyAI>().target.transform);
     }
+    private void OnCollisionEnter(Collision collision)
+    {
+        if (collision.gameObject.tag != "GameCharacter")
+            GameObject.Destroy(this.gameObject);
+    }
 }

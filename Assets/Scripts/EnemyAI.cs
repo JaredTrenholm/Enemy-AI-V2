@@ -54,27 +54,26 @@ public class EnemyAI : MonoBehaviour
     private void DoState()
     {
         LookForTarget();
-        CheckState();
         switch (state) {
             case AIState.Patrol:
                 Patrol();
-                CheckState();
+                CheckPatrolState();
                 break;
             case AIState.Chasing:
                 Chase();
-                CheckState();
+                CheckChaseState();
                 break;
             case AIState.Searching:
                 Search();
-                CheckState();
+                CheckSearchingState();
                 break;
             case AIState.Attacking:
                 Attack();
-                CheckState();
+                CheckAttackState();
                 break;
             case AIState.Retreating:
                 Retreat();
-                CheckState();
+                CheckRetreatState();
                 break;
         }
     }
@@ -153,9 +152,7 @@ public class EnemyAI : MonoBehaviour
             }
 
             agent.SetDestination(this.transform.position);
-            GameObject attackingBullet = GameObject.Instantiate(bullet);
-            attackingBullet.transform.position = this.transform.position;
-            attackingBullet.GetComponent<Bullet>().SetAttacker(this.gameObject);
+            Shoot();
             readyToFire = false;
             timeBeforeFiring = 0;
             if (!CanSeeTarget())
@@ -172,6 +169,12 @@ public class EnemyAI : MonoBehaviour
             timeBeforeFiring += Time.deltaTime;
         }
     }
+    private void Shoot()
+    {
+        GameObject attackingBullet = GameObject.Instantiate(bullet);
+        attackingBullet.transform.position = this.transform.position;
+        attackingBullet.GetComponent<Bullet>().SetAttacker(this.gameObject);
+    }
     private void Retreat()
     {
         agent.SetDestination(destination);
@@ -183,25 +186,87 @@ public class EnemyAI : MonoBehaviour
     #endregion
 
     #region Check and Changing States
-    private void CheckState()
+    private void CheckPatrolState()
     {
-        if(target != null && state != AIState.Attacking)
+        if (target != null && target.activeInHierarchy != false)
         {
             ChangeState(AIState.Chasing);
+        } else if(target.activeInHierarchy == false)
+        {
+            target = null;
         }
+    }
+    private void CheckChaseState()
+    {
+        if (target != null) {
+            if (target.activeInHierarchy != false)
+            {
+                if (Vector3.Distance(this.transform.position, target.transform.position) <= attackRange)
+                {
+                    agent.SetDestination(this.transform.position);
+                    ChangeState(AIState.Attacking);
+                    return;
+                }
+            }
+        }
+        target = null;
+        ChangeState(AIState.Searching);
+    }
+    private void CheckAttackState()
+    {
         if (target != null)
+        {
             if (target.activeInHierarchy == false)
             {
                 target = null;
                 ChangeState(AIState.Patrol);
-            } else if(Vector3.Distance(this.transform.position, target.transform.position) <= attackRange)
+            }
+            else if (Vector3.Distance(this.transform.position, target.transform.position) <= attackRange)
             {
                 agent.SetDestination(this.transform.position);
                 ChangeState(AIState.Attacking);
+            } else
+            {
+                ChangeState(AIState.Chasing);
             }
-
+        } else
+        {
+            ChangeState(AIState.Searching);
+        }
     }
-
+    private void CheckSearchingState()
+    {
+        if(target != null)
+        {
+            CheckTargetRange();
+        }
+        else if (Vector3.Distance(this.transform.position, targetLastKnownPos) <= attackRange)
+        {
+            ChangeState(AIState.Retreating);
+        }
+    }
+    private void CheckRetreatState()
+    {
+        if (target != null)
+        {
+            CheckTargetRange();
+        }
+        else if (IsAtDestination(destination, 2f))
+        {
+            ChangeState(AIState.Patrol);
+        }
+    }
+    private void CheckTargetRange()
+    {
+        if (Vector3.Distance(this.transform.position, target.transform.position) <= attackRange)
+        {
+            ChangeState(AIState.Attacking);
+        }
+        else
+        {
+            ChangeState(AIState.Chasing);
+        }
+    }
     private void ChangeState(AIState targetState)
     {
         state = targetState;
@@ -232,7 +297,8 @@ public class EnemyAI : MonoBehaviour
     {
         Vector3 randomDirection = Random.insideUnitSphere * sightRange;
         randomDirection += transform.position;
-        agent.SetDestination(randomDirection);
+        if(agent != null)
+            agent.SetDestination(randomDirection);
     }
     #endregion
 
@@ -258,66 +324,34 @@ public class EnemyAI : MonoBehaviour
                 }
             }
         }
-        Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.forward) * 1000, Color.black);
-        Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.forward + Vector3.left) * 1000, Color.black);
-        Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.forward + Vector3.left * 2) * 1000, Color.black);
-        Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.forward + Vector3.left * 4) * 1000, Color.black);
-        Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.forward + Vector3.left / 2) * 1000, Color.black);
-        Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.forward + Vector3.left / 4) * 1000, Color.black);
-        Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.forward + Vector3.right) * 1000, Color.black);
-        Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.forward + Vector3.right * 2) * 1000, Color.black);
-        Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.forward + Vector3.right * 4) * 1000, Color.black);
-        Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.forward + Vector3.right / 2) * 1000, Color.black);
-        Debug.DrawRay(transform.position, transform.TransformDirection(Vector3.forward + Vector3.right / 4) * 1000, Color.black);
-
-        if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward) * 1000, out hit))
+        for (int x = 1; x <= 10; x++)
         {
-            CheckTarget();
-        }
-        if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward + Vector3.left) * 1000 , out hit))
-        {
-            CheckTarget();
-        }
-        if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward + Vector3.right) * 1000 , out hit))
-        {
-            CheckTarget();
-        }
-        if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward + (Vector3.left * 2)) * 1000 , out hit))
-        {
-            CheckTarget();
-        }
-        if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward + (Vector3.right * 2)) * 1000 , out hit))
-        {
-            CheckTarget();
-        }
-        if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward + (Vector3.left / 2)) * 1000 , out hit))
-        {
-            CheckTarget();
-        }
-        if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward + (Vector3.right / 2)) * 1000 , out hit))
-        {
-            CheckTarget();
-        }
-        if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward + (Vector3.left * 4)) * 1000, out hit))
-        {
-            CheckTarget();
-        }
-        if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward + (Vector3.right * 4)) * 1000 , out hit))
-        {
-            CheckTarget();
-        }
-        if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward + (Vector3.left / 4)) * 1000 , out hit))
-        {
-            CheckTarget();
-        }
-        if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward + (Vector3.right / 4)) * 1000 , out hit))
-        {
-            CheckTarget();
+            if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward) * 1000, out hit))
+            {
+                CheckTarget();
+            }
+            if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward + Vector3.left * x) * 1000, out hit))
+            {
+                CheckTarget();
+            }
+            if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward + Vector3.right * x) * 1000, out hit))
+            {
+                CheckTarget();
+            }
+            if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward + Vector3.left / x) * 1000, out hit))
+            {
+                CheckTarget();
+            }
+            if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward + Vector3.right / x) * 1000, out hit))
+            {
+                CheckTarget();
+            }
         }
     }
     
     private bool CanSeeTarget()
     {
+        bool canSeeTarget = false;
         if (Vector3.Distance(this.transform.position, player.transform.position) <= 10f * player.GetComponent<PlayerController>().speedSound)
         {
             if (Physics.Raycast(transform.position, player.transform.position, out hit))
@@ -326,63 +360,47 @@ public class EnemyAI : MonoBehaviour
                     return true;
             }
         }
-        if (state == AIState.Searching)
+        if (state == AIState.Chasing)
         {
-            transform.LookAt(targetLastKnownPos);
-            if (Physics.Raycast(transform.position, transform.TransformDirection(player.transform.position), out hit))
+            transform.LookAt(new Vector3(target.transform.position.x, this.transform.position.y, target.transform.position.z));
+            if (Physics.Raycast(transform.position, transform.TransformDirection(target.transform.position), out hit))
             {
-                if (hit.collider.gameObject == player)
+                if (hit.collider.gameObject == target)
                     return true;
             }
         }
         if (target != null)
         {
-            if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward) * 1000, out hit))
+            for (int x = 1; x <= 10; x++)
             {
-                return hit.collider.gameObject == target;
-            }
-            if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward + Vector3.left) * 1000, out hit))
-            {
-                return hit.collider.gameObject == target;
-            }
-            if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward + Vector3.right) * 1000, out hit))
-            {
-                return hit.collider.gameObject == target;
-            }
-            if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward + (Vector3.left * 2)) * 1000, out hit))
-            {
-                return hit.collider.gameObject == target;
-            }
-            if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward + (Vector3.right * 2)) * 1000, out hit))
-            {
-                return hit.collider.gameObject == target;
-            }
-            if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward + (Vector3.left / 2)) * 1000, out hit))
-            {
-                return hit.collider.gameObject == target;
-            }
-            if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward + (Vector3.right / 2)) * 1000, out hit))
-            {
-                return hit.collider.gameObject == target;
-            }
-            if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward + (Vector3.left * 4)) * 1000, out hit))
-            {
-                return hit.collider.gameObject == target;
-            }
-            if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward + (Vector3.right * 4)) * 1000, out hit))
-            {
-                return hit.collider.gameObject == target;
-            }
-            if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward + (Vector3.left / 4)) * 1000, out hit))
-            {
-                return hit.collider.gameObject == target;
-            }
-            if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward + (Vector3.right / 4)) * 1000, out hit))
-            {
-                return hit.collider.gameObject == target;
+                if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward) * 1000, out hit))
+                {
+                    if (hit.collider.gameObject == target.gameObject)
+                        canSeeTarget = true;
+                }
+                if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward + Vector3.left * x) * 1000, out hit))
+                {
+                    if (hit.collider.gameObject == target.gameObject)
+                        canSeeTarget = true;
+                }
+                if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward + Vector3.right * x) * 1000, out hit))
+                {
+                    if (hit.collider.gameObject == target.gameObject)
+                        canSeeTarget = true;
+                }
+                if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward + Vector3.left / x) * 1000, out hit))
+                {
+                    if (hit.collider.gameObject == target.gameObject)
+                        canSeeTarget = true;
+                }
+                if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward + Vector3.right / x) * 1000, out hit))
+                {
+                    if (hit.collider.gameObject == target.gameObject)
+                        canSeeTarget = true;
+                }
             }
         }
-        return false;
+        return canSeeTarget;
     }
 
     private void CheckTarget()
@@ -391,16 +409,11 @@ public class EnemyAI : MonoBehaviour
         {
             if (Vector3.Distance(this.transform.position, hit.collider.gameObject.transform.position) <= sightRange)
             {
-                if (hit.collider.gameObject.GetComponent<GameCharacter>().type != type) {
+                if (hit.collider.gameObject.GetComponent<GameCharacter>().type != type)
+                {
                     target = hit.collider.gameObject;
                     targetLastKnownPos = target.gameObject.transform.position;
-                } /*else if(target != null)
-                {
-                    if(hit.collider.gameObject == target)
-                    {
-                        targetLastKnownPos = target.gameObject.transform.position;
-                    }
-                }*/
+                }
             }
         }
     }
