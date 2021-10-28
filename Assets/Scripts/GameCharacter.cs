@@ -8,8 +8,8 @@ public class GameCharacter : MonoBehaviour
     public int health = 50;
     public enum CharacterType
     {
-        Enemy,
-        NonAligned,
+        Team1,
+        Team2,
         Traitor,
         Player
     }

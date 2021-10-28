@@ -10,7 +10,7 @@ public class EyeColorChange : MonoBehaviour
     void Update()
     {
         switch (enemy.GetComponent<EnemyAI>().type) {
-            case GameCharacter.CharacterType.Enemy:
+            case GameCharacter.CharacterType.Team1:
                 enemyEye.SetActive(true);
                 traitorEye.SetActive(false);
                 break;
