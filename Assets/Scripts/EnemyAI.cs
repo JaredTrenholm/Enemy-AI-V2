@@ -11,7 +11,9 @@ public class EnemyAI : MonoBehaviour
     public float waitToFire;
     public GameObject target;
     public GameCharacter.CharacterType type;
+    public float timeBeforeSwitching;
 
+    private float timePassedSinceSwitch;
     private float timeBeforeFiring;
     private bool readyToFire = true;
     private Vector3 targetLastKnownPos;
@@ -42,6 +44,7 @@ public class EnemyAI : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        timePassedSinceSwitch += Time.deltaTime;
         DoState();
     }
     private void FixedUpdate()
@@ -107,19 +110,9 @@ public class EnemyAI : MonoBehaviour
     }
     private void Chase()
     {
-        if(CanSeeTarget() == false)
-        {
-            ChangeState(AIState.Searching);
-            return;
-        }
         if (IsAtDestination(target.transform.position, attackRange))
         {
-            if (Physics.Raycast(transform.position, target.transform.position, out hit))
-            {
-                ChangeState(AIState.Attacking);
-                agent.SetDestination(this.transform.position);
-            }
-            
+            ChangeState(AIState.Attacking);
         }
         else
         {
@@ -150,17 +143,9 @@ public class EnemyAI : MonoBehaviour
                 ChangeState(AIState.Searching);
                 return;
             }
-
-            agent.SetDestination(this.transform.position);
             Shoot();
             readyToFire = false;
             timeBeforeFiring = 0;
-            if (!CanSeeTarget())
-                ChangeState(AIState.Searching);
-            if (target == null)
-                return;
-            if (target.activeInHierarchy == false)
-                ChangeState(AIState.Patrol);
         } else if(timeBeforeFiring >= waitToFire)
         {
             readyToFire = true;
@@ -188,12 +173,12 @@ public class EnemyAI : MonoBehaviour
     #region Check and Changing States
     private void CheckPatrolState()
     {
-        if (target != null && target.activeInHierarchy != false)
+        if (target != null)
         {
-            ChangeState(AIState.Chasing);
-        } else if(target.activeInHierarchy == false)
-        {
-            target = null;
+            if (target.activeInHierarchy != false)
+                ChangeState(AIState.Chasing);
+            else
+                target = null;
         }
     }
     private void CheckChaseState()
@@ -203,13 +188,11 @@ public class EnemyAI : MonoBehaviour
             {
                 if (Vector3.Distance(this.transform.position, target.transform.position) <= attackRange)
                 {
-                    agent.SetDestination(this.transform.position);
                     ChangeState(AIState.Attacking);
                     return;
                 }
             }
         }
-        target = null;
         ChangeState(AIState.Searching);
     }
     private void CheckAttackState()
@@ -218,13 +201,11 @@ public class EnemyAI : MonoBehaviour
         {
             if (target.activeInHierarchy == false)
             {
-                target = null;
                 ChangeState(AIState.Patrol);
             }
             else if (Vector3.Distance(this.transform.position, target.transform.position) <= attackRange)
             {
-                agent.SetDestination(this.transform.position);
-                ChangeState(AIState.Attacking);
+                return;
             } else
             {
                 ChangeState(AIState.Chasing);
@@ -240,7 +221,7 @@ public class EnemyAI : MonoBehaviour
         {
             CheckTargetRange();
         }
-        else if (Vector3.Distance(this.transform.position, targetLastKnownPos) <= attackRange)
+        else if (Vector3.Distance(this.transform.position, targetLastKnownPos) <= 2f)
         {
             ChangeState(AIState.Retreating);
         }
@@ -262,23 +243,40 @@ public class EnemyAI : MonoBehaviour
         {
             ChangeState(AIState.Attacking);
         }
-        else
+        else if(CanSeeTarget())
         {
             ChangeState(AIState.Chasing);
         }
     }
     private void ChangeState(AIState targetState)
     {
-        state = targetState;
-        if (state == AIState.Searching)
+        if (timePassedSinceSwitch >= timeBeforeSwitching)
         {
-            targetLastKnownPos = target.transform.position;
-            agent.SetDestination(targetLastKnownPos);
-            target = null;
-        }
-        else if (state == AIState.Patrol)
-        {
-            FindNewDestination();
+            timePassedSinceSwitch = 0;
+            state = targetState;
+            if (state == AIState.Searching)
+            {
+                if (target != null)
+                {
+                    if (!CanSeeTarget())
+                    {
+                        targetLastKnownPos = target.transform.position;
+                        agent.SetDestination(targetLastKnownPos);
+                        target = null;
+                    } else
+                    {
+                        state = AIState.Chasing;
+                    }
+                }
+                else
+                {
+                    agent.SetDestination(targetLastKnownPos);
+                }
+            }
+            else if (state == AIState.Patrol)
+            {
+                FindNewDestination();
+            }
         }
     }
     #endregion
@@ -311,40 +309,24 @@ public class EnemyAI : MonoBehaviour
             targetLastKnownPos = player.transform.position;
             ChangeState(AIState.Searching);
         }
-        if(state == AIState.Searching)
-        {
-            transform.LookAt(targetLastKnownPos);
-            if (Physics.Raycast(transform.position, transform.TransformDirection(player.transform.position), out hit))
-            {
-                if (hit.collider.gameObject == player && state != AIState.Attacking)
-                {
-                    target = player;
-                    targetLastKnownPos = player.transform.position;
-                    ChangeState(AIState.Chasing);
-                }
-            }
-        }
         for (int x = 1; x <= 10; x++)
         {
             if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward) * 1000, out hit))
-            {
                 CheckTarget();
-            }
             if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward + Vector3.left * x) * 1000, out hit))
-            {
                 CheckTarget();
-            }
             if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward + Vector3.right * x) * 1000, out hit))
-            {
                 CheckTarget();
-            }
             if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward + Vector3.left / x) * 1000, out hit))
-            {
                 CheckTarget();
-            }
             if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward + Vector3.right / x) * 1000, out hit))
-            {
                 CheckTarget();
+            if (target != null)
+            {
+                if (Physics.Raycast(transform.position, transform.TransformDirection(target.transform.position) * 1000, out hit))
+                {
+                    CheckTarget();
+                }
             }
         }
     }
@@ -360,19 +342,15 @@ public class EnemyAI : MonoBehaviour
                     return true;
             }
         }
-        if (state == AIState.Chasing)
-        {
-            transform.LookAt(new Vector3(target.transform.position.x, this.transform.position.y, target.transform.position.z));
-            if (Physics.Raycast(transform.position, transform.TransformDirection(target.transform.position), out hit))
-            {
-                if (hit.collider.gameObject == target)
-                    return true;
-            }
-        }
         if (target != null)
         {
             for (int x = 1; x <= 10; x++)
             {
+                if (Physics.Raycast(transform.position, transform.TransformDirection(target.transform.position) * 1000, out hit))
+                {
+                    if (hit.collider.gameObject == target.gameObject)
+                        canSeeTarget = true;
+                }
                 if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.forward) * 1000, out hit))
                 {
                     if (hit.collider.gameObject == target.gameObject)
