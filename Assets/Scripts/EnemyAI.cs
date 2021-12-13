@@ -110,7 +110,7 @@ public class EnemyAI : MonoBehaviour
     }
     private void Chase()
     {
-        if (IsAtDestination(target.transform.position, attackRange))
+        if (IsAtDestination(target.transform.position, attackRange) && CanSeeTarget())
         {
             ChangeState(AIState.Attacking);
         }
@@ -122,15 +122,7 @@ public class EnemyAI : MonoBehaviour
     private void Search()
     {
         LookForTarget();
-        if (CanSeeTarget() == true)
-        {
-            ChangeState(AIState.Chasing);
-            return;
-        }
-        if (IsAtDestination(targetLastKnownPos, 2f))
-        {
-            ChangeState(AIState.Retreating);
-        }
+        
     }
     private void Attack()
     {
@@ -138,11 +130,6 @@ public class EnemyAI : MonoBehaviour
         {
             this.transform.LookAt(target.transform);
             agent.SetDestination(this.transform.position);
-            if (!CanSeeTarget())
-            {
-                ChangeState(AIState.Searching);
-                return;
-            }
             Shoot();
             readyToFire = false;
             timeBeforeFiring = 0;
@@ -186,24 +173,33 @@ public class EnemyAI : MonoBehaviour
         if (target != null) {
             if (target.activeInHierarchy != false)
             {
-                if (Vector3.Distance(this.transform.position, target.transform.position) <= attackRange)
+                if (Vector3.Distance(this.transform.position, target.transform.position) <= attackRange && CanSeeTarget())
                 {
                     ChangeState(AIState.Attacking);
                     return;
                 }
             }
         }
+        if (IsAtDestination(targetLastKnownPos, 2f))
+        {
+            ChangeState(AIState.Retreating);
+        }
         ChangeState(AIState.Searching);
     }
     private void CheckAttackState()
     {
+        if (!CanSeeTarget())
+        {
+            ChangeState(AIState.Searching);
+            return;
+        }
         if (target != null)
         {
             if (target.activeInHierarchy == false)
             {
                 ChangeState(AIState.Patrol);
             }
-            else if (Vector3.Distance(this.transform.position, target.transform.position) <= attackRange)
+            else if (Vector3.Distance(transform.position, target.transform.position) <= attackRange)
             {
                 return;
             } else
@@ -239,7 +235,7 @@ public class EnemyAI : MonoBehaviour
     }
     private void CheckTargetRange()
     {
-        if (Vector3.Distance(this.transform.position, target.transform.position) <= attackRange)
+        if (Vector3.Distance(this.transform.position, target.transform.position) <= attackRange && CanSeeTarget())
         {
             ChangeState(AIState.Attacking);
         }
@@ -334,14 +330,6 @@ public class EnemyAI : MonoBehaviour
     private bool CanSeeTarget()
     {
         bool canSeeTarget = false;
-        if (Vector3.Distance(this.transform.position, player.transform.position) <= 10f * player.GetComponent<PlayerController>().speedSound)
-        {
-            if (Physics.Raycast(transform.position, player.transform.position, out hit))
-            {
-                if(hit.collider.gameObject == player)
-                    return true;
-            }
-        }
         if (target != null)
         {
             for (int x = 1; x <= 10; x++)
